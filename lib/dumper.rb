@@ -44,11 +44,6 @@ module Dumper
   end
 
   def create_dirs_if_not_exists
-    unless Dir.exists?("tmp")
-      Dir.mkdir("tmp")
-    end
-    unless Dir.exists?(dumps_location)
-      Dir.mkdir(dumps_location)
-    end
+    FileUtils.mkdir_p(dumps_location)
   end
 end
