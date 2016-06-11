@@ -2,6 +2,7 @@ require "dumper/version"
 
 module Dumper
   mattr_accessor(:database) { "please_configure_database" }
+  mattr_accessor(:dumps_location) { "tmp/dumper" }
 
   def self.setup
     yield(self)
@@ -40,10 +41,6 @@ module Dumper
       name_with_created_on << "_#{created_on.to_s(:number)}"
     end
     "#{dumps_location}/#{name_with_created_on}.dump"
-  end
-
-  def dumps_location
-    "tmp/dumper"
   end
 
   def create_dirs_if_not_exists
