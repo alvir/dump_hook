@@ -3,6 +3,7 @@ require "dumper/version"
 module Dumper
   mattr_accessor(:database) { "please_configure_database" }
   mattr_accessor(:dumps_location) { "tmp/dumper" }
+  mattr_accessor(:actual)
 
   def self.setup
     yield(self)
@@ -10,8 +11,9 @@ module Dumper
 
   def execute_with_dump(name, opts={}, &block)
     created_on = opts[:created_on]
+    actual = opts[:actual] || self.actual
     create_dirs_if_not_exists
-    filename = full_filename(name, created_on)
+    filename = full_filename(name, created_on, actual)
     if File.exists?(filename)
       restore_dump(filename)
     else
@@ -35,10 +37,12 @@ module Dumper
     Kernel.system("pg_restore", *args)
   end
 
-  def full_filename(name, created_on)
+  def full_filename(name, created_on, actual)
     name_with_created_on = name
     if created_on
       name_with_created_on << "_#{created_on.to_s(:number)}"
+    elsif actual
+      name_with_created_on << "_actual#{actual}"
     end
     "#{dumps_location}/#{name_with_created_on}.dump"
   end
