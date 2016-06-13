@@ -40,9 +40,9 @@ module Dumper
   def full_filename(name, created_on, actual)
     name_with_created_on = name
     if created_on
-      name_with_created_on << "_#{created_on.to_s(:number)}"
+      name_with_created_on = "#{name_with_created_on}_#{created_on.to_s(:number)}"
     elsif actual
-      name_with_created_on << "_actual#{actual}"
+      name_with_created_on = "#{name_with_created_on}_actual#{actual}"
     end
     "#{dumps_location}/#{name_with_created_on}.dump"
   end
