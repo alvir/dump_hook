@@ -3,6 +3,7 @@ require "dumper/version"
 module Dumper
   mattr_accessor(:database) { "please_configure_database" }
   mattr_accessor(:dumps_location) { "tmp/dumper" }
+  mattr_accessor(:remove_old_dumps) { true }
   mattr_accessor(:actual)
 
   def self.setup
@@ -19,6 +20,8 @@ module Dumper
     else
       if created_on
         Timecop.travel(created_on)
+      elsif actual && self.remove_old_dumps
+        FileUtils.rm(Dir.glob(full_filename(name, nil, "*")))
       end
       block.call
       Timecop.return
