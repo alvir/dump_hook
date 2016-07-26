@@ -128,15 +128,45 @@ describe Dumper do
     end
 
     context 'mysql' do
+      let(:database) { 'dumper_test' }
+      let(:db) { Sequel.connect(adapter: 'mysql2') }
+
       before(:each) do
+        db.run("CREATE DATABASE #{database}")
         Dumper.setup do |c|
-          c.adapter_name = 'mysql'
-          c.database = ''
+          c.database = database
         end
       end
 
       after(:each) do
+        db.run("DROP DATABASE #{database}")
+
+        db.disconnect
         FileUtils.rm_r('tmp')
+      end
+
+      it 'creates dump file' do
+        object.execute_with_dump("some_dump") { }
+        expect(File.exists?("tmp/dumper/some_dump.dump")).to be(true)
+      end
+
+      context 'dump content' do
+        before(:each) do
+          object.execute_with_dump("some_dump") do
+            db.run("create table t (a text, b text)")
+            db.run("insert into t values ('a', 'b')")
+          end
+        end
+
+        it 'inserts some info' do
+          expect(db[:t].map([:a, :b])).to eq([['a', 'b']])
+        end
+
+        it 'uses dump content if dump exists' do
+          db.run("delete from t")
+          object.execute_with_dump("some_dump") { }
+          expect(db[:t].map([:a, :b])).to eq([['a', 'b']])
+        end
       end
     end
   end
