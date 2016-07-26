@@ -1,18 +1,28 @@
 require "dumper/version"
 
 module Dumper
-  mattr_accessor(:database) { "please_configure_database" }
-  mattr_accessor(:dumps_location) { "tmp/dumper" }
-  mattr_accessor(:remove_old_dumps) { true }
-  mattr_accessor(:actual)
+  class Settings
+    attr_accessor :database, :dumps_location, :remove_old_dumps, :actual
+
+    def initialize
+      @database = 'please set database'
+      @dumps_location = 'tmp/dumper'
+      @remove_old_dumps = true
+    end
+  end
+
+  class << self
+    attr_accessor :settings
+  end
 
   def self.setup
-    yield(self)
+    self.settings ||= Settings.new
+    yield(settings)
   end
 
   def execute_with_dump(name, opts={}, &block)
     created_on = opts[:created_on]
-    actual = opts[:actual] || self.actual
+    actual = opts[:actual] || settings.actual
     create_dirs_if_not_exists
     filename = full_filename(name, created_on, actual)
     if File.exists?(filename)
@@ -20,7 +30,7 @@ module Dumper
     else
       if created_on
         Timecop.travel(created_on)
-      elsif actual && self.remove_old_dumps
+      elsif actual && settings.remove_old_dumps
         FileUtils.rm(Dir.glob(full_filename(name, nil, "*")))
       end
       block.call
@@ -47,10 +57,10 @@ module Dumper
     elsif actual
       name_with_created_on = "#{name_with_created_on}_actual#{actual}"
     end
-    "#{dumps_location}/#{name_with_created_on}.dump"
+    "#{settings.dumps_location}/#{name_with_created_on}.dump"
   end
 
   def create_dirs_if_not_exists
-    FileUtils.mkdir_p(dumps_location)
+    FileUtils.mkdir_p(settings.dumps_location)
   end
 end
