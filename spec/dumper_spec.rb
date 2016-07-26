@@ -56,4 +56,29 @@ describe Dumper do
       end
     end
   end
+
+  describe '.execute_with_dump' do
+    context 'folders creation' do
+      let(:dumps_location) { "tmp1/tmp2/tmp3" }
+
+      before(:each) do
+        Dumper.setup do |c|
+          c.dumps_location = dumps_location
+          c.actual = 'actual'
+        end
+      end
+
+      after(:each) do
+        FileUtils.rm_r('tmp1')
+      end
+
+      it 'creates folders' do
+        object = Object.new
+        object.extend(Dumper)
+
+        object.execute_with_dump("some_dump") { }
+        expect(Dir.exists?(dumps_location)).to be(true)
+      end
+    end
+  end
 end

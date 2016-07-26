@@ -1,4 +1,5 @@
 require "dumper/version"
+require "timecop"
 
 module Dumper
   class Settings
@@ -39,14 +40,18 @@ module Dumper
     end
   end
 
+  def settings
+    Dumper.settings
+  end
+
   def store_dump(filename)
     args = ['-a', '-x', '-O', '-f', filename, '-Fc', '-T', 'schema_migrations']
-    args << database
+    args << settings.database
     Kernel.system("pg_dump", *args)
   end
 
   def restore_dump(filename)
-    args = ['-d', database, filename]
+    args = ['-d', settings.database, filename]
     Kernel.system("pg_restore", *args)
   end
 
