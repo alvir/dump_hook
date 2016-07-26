@@ -3,10 +3,11 @@ require "timecop"
 
 module Dumper
   class Settings
-    attr_accessor :database, :dumps_location, :remove_old_dumps, :actual
+    attr_accessor :database, :dumps_location, :remove_old_dumps, :actual, :adapter_name
 
     def initialize
       @database = 'please set database'
+      @adapter_name = 'postgres'
       @dumps_location = 'tmp/dumper'
       @remove_old_dumps = true
     end
@@ -17,7 +18,7 @@ module Dumper
   end
 
   def self.setup
-    self.settings ||= Settings.new
+    self.settings = Settings.new
     yield(settings)
   end
 

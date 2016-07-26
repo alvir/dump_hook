@@ -1,4 +1,5 @@
 require 'spec_helper'
+require 'sequel'
 
 describe Dumper do
   it 'has a version number' do
@@ -80,6 +81,62 @@ describe Dumper do
       it 'creates folders' do
         object.execute_with_dump("some_dump") { }
         expect(Dir.exists?(dumps_location)).to be(true)
+      end
+    end
+
+    context 'postgres' do
+      let(:database) { 'dumper_test' }
+      let(:db) { Sequel.connect(adapter: 'postgres', database: database) }
+
+      before(:each) do
+        Kernel.system('createdb', database)
+
+        Dumper.setup do |c|
+          c.database = database
+        end
+      end
+
+      after(:each) do
+        db.disconnect
+        Kernel.system('dropdb', database)
+        FileUtils.rm_r('tmp')
+      end
+
+      it 'creates dump file' do
+        object.execute_with_dump("some_dump") { }
+        expect(File.exists?("tmp/dumper/some_dump.dump")).to be(true)
+      end
+
+      context 'dump content' do
+        before(:each) do
+          object.execute_with_dump("some_dump") do
+            db.run("create table t (a text, b text)")
+            db.run("insert into t values ('a', 'b')")
+          end
+        end
+
+        it 'inserts some info' do
+          expect(db[:t].map([:a, :b])).to eq([['a', 'b']])
+        end
+
+        it 'uses dump content if dump exists' do
+          db.run("delete from t")
+          object.execute_with_dump("some_dump") { }
+          expect(db[:t].map([:a, :b])).to eq([['a', 'b']])
+        end
+      end
+    end
+
+    context 'mysql' do
+      before(:each) do
+        Dumper.setup do |c|
+          c.adapter_name = 'mysql'
+          c.database = ''
+        end
+      end
+
+      after(:each) do
+        FileUtils.rm_r('tmp')
       end
     end
   end
