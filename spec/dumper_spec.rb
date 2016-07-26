@@ -64,7 +64,6 @@ describe Dumper do
       before(:each) do
         Dumper.setup do |c|
           c.dumps_location = dumps_location
-          c.actual = 'actual'
         end
       end
 
