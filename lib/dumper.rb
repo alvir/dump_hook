@@ -3,7 +3,7 @@ require "timecop"
 
 module Dumper
   class Settings
-    attr_accessor :database, :dumps_location, :remove_old_dumps, :actual, :database_type, :username
+    attr_accessor :database, :dumps_location, :remove_old_dumps, :actual, :database_type, :username, :password
 
     def initialize
       @database = 'please set database'
@@ -52,11 +52,10 @@ module Dumper
         args << settings.database
         Kernel.system("pg_dump", *args)
       when 'mysql'
-        args = ["--compress"]
-        args.concat ['--user', settings.username]
+        args = mysql_connection_args
+        args << "--compress"
         args.concat ["--result-file", filename]
         args.concat ["--ignore-table", "#{settings.database}.schema_migrations"]
-        args.concat ["--databases", settings.database]
         Kernel.system("mysqldump", *args)
     end
   end
@@ -67,8 +66,7 @@ module Dumper
         args = ['-d', settings.database, filename]
         Kernel.system("pg_restore", *args)
       when 'mysql'
-        args = [settings.database]
-        args.concat ['--user', settings.username]
+        args = mysql_connection_args
         args.concat ["-e", "source #{filename}"]
         Kernel.system("mysql", *args)
     end
@@ -86,5 +84,12 @@ module Dumper
 
   def create_dirs_if_not_exists
     FileUtils.mkdir_p(settings.dumps_location)
+  end
+
+  def mysql_connection_args
+    args = [settings.database]
+    args.concat ['--user', settings.username] if settings.username
+    args << "--password=#{settings.password}" if settings.password
+    args
   end
 end
