@@ -3,11 +3,11 @@ require "timecop"
 
 module Dumper
   class Settings
-    attr_accessor :database, :dumps_location, :remove_old_dumps, :actual, :adapter_name
+    attr_accessor :database, :dumps_location, :remove_old_dumps, :actual, :database_type, :username
 
     def initialize
       @database = 'please set database'
-      @adapter_name = 'postgres'
+      @database_type = 'postgres'
       @dumps_location = 'tmp/dumper'
       @remove_old_dumps = true
     end
@@ -46,14 +46,32 @@ module Dumper
   end
 
   def store_dump(filename)
-    args = ['-a', '-x', '-O', '-f', filename, '-Fc', '-T', 'schema_migrations']
-    args << settings.database
-    Kernel.system("pg_dump", *args)
+    case settings.database_type
+      when 'postgres'
+        args = ['-a', '-x', '-O', '-f', filename, '-Fc', '-T', 'schema_migrations']
+        args << settings.database
+        Kernel.system("pg_dump", *args)
+      when 'mysql'
+        args = ["--compress"]
+        args.concat ['--user', settings.username]
+        args.concat ["--result-file", filename]
+        args.concat ["--ignore-table", "#{settings.database}.schema_migrations"]
+        args.concat ["--databases", settings.database]
+        Kernel.system("mysqldump", *args)
+    end
   end
 
   def restore_dump(filename)
-    args = ['-d', settings.database, filename]
-    Kernel.system("pg_restore", *args)
+    case settings.database_type
+      when 'postgres'
+        args = ['-d', settings.database, filename]
+        Kernel.system("pg_restore", *args)
+      when 'mysql'
+        args = [settings.database]
+        args.concat ['--user', settings.username]
+        args.concat ["-e", "source #{filename}"]
+        Kernel.system("mysql", *args)
+    end
   end
 
   def full_filename(name, created_on, actual)

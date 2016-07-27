@@ -129,12 +129,16 @@ describe Dumper do
 
     context 'mysql' do
       let(:database) { 'dumper_test' }
-      let(:db) { Sequel.connect(adapter: 'mysql2') }
+      let(:username) { 'root' }
+      let(:db) { Sequel.connect(adapter: 'mysql2', user: username) }
 
       before(:each) do
         db.run("CREATE DATABASE #{database}")
+        db.run("USE #{database}")
         Dumper.setup do |c|
           c.database = database
+          c.database_type = 'mysql'
+          c.username = username
         end
       end
 
