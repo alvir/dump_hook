@@ -55,11 +55,9 @@ execute_with_dump(name, opts={}, &block)
 
 Шаг обертка для дампа (может, нужно её добавить в гем)
 ```ruby
-Given(/^There is "(.*?)" background with:$/) do |name, steps|
+Given(/^There is "(.*?)" background with:$/) do |name, steps_order|
   execute_with_dump(name) do
-    steps.split(/\n+/).each do |step_definition|
-      step step_definition.strip
-    end
+    steps steps_order.to_s
   end
 end
 ```
