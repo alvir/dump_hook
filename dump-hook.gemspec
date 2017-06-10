@@ -1,17 +1,17 @@
 # coding: utf-8
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'dumper/version'
+require 'dump_hook/version'
 
 Gem::Specification.new do |spec|
-  spec.name          = "dumper"
-  spec.version       = Dumper::VERSION
+  spec.name          = "dump-hook"
+  spec.version       = DumpHook::VERSION
   spec.authors       = ["Alexander Rjazantsev"]
   spec.email         = ["ar@anadeainc.com"]
 
   spec.summary       = %q{Dumps to cache you backgrounds}
   spec.description   = %q{We use it for our capybara/Cucumber features.}
-  spec.homepage    = "http://gitlab.anahoret.com/anadea/dumper"
+  spec.homepage    = "https://github.com/Anadea/dump-hook"
   spec.license       = "MIT"
 
   # Prevent pushing this gem to RubyGems.org. To allow pushes either set the 'allowed_push_host'
@@ -23,8 +23,8 @@ Gem::Specification.new do |spec|
   end
 
   spec.files         = `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
-  spec.bindir        = "exe"
-  spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
+  spec.bindir        = "bin"
+  spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
   spec.add_dependency 'timecop'

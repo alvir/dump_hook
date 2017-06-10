@@ -1,14 +1,14 @@
-require "dumper/version"
+require "dump_hook/version"
 require "timecop"
 
-module Dumper
+module DumpHook
   class Settings
     attr_accessor :database, :dumps_location, :remove_old_dumps, :actual, :database_type, :username, :password
 
     def initialize
       @database = 'please set database'
       @database_type = 'postgres'
-      @dumps_location = 'tmp/dumper'
+      @dumps_location = 'tmp/dump_hook'
       @remove_old_dumps = true
     end
   end
@@ -42,7 +42,7 @@ module Dumper
   end
 
   def settings
-    Dumper.settings
+    DumpHook.settings
   end
 
   def store_dump(filename)

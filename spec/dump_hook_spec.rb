@@ -1,32 +1,32 @@
 require 'spec_helper'
 require 'sequel'
 
-describe Dumper do
+describe DumpHook do
   it 'has a version number' do
-    expect(Dumper::VERSION).not_to be nil
+    expect(DumpHook::VERSION).not_to be nil
   end
 
   describe '.setup' do
     context 'default settings' do
       before(:each) do
-        Dumper.setup do |_|
+        DumpHook.setup do |_|
         end
       end
 
       it 'sets dumps_location' do
-        expect(Dumper.settings.dumps_location).to eq('tmp/dumper')
+        expect(DumpHook.settings.dumps_location).to eq('tmp/dump_hook')
       end
 
       it 'sets remove_old_dumps' do
-        expect(Dumper.settings.remove_old_dumps).to eq(true)
+        expect(DumpHook.settings.remove_old_dumps).to eq(true)
       end
 
       it 'sets database' do
-        expect(Dumper.settings.database).to eq('please set database')
+        expect(DumpHook.settings.database).to eq('please set database')
       end
 
       it 'does not set actual' do
-        expect(Dumper.settings.actual).to be nil
+        expect(DumpHook.settings.actual).to be nil
       end
     end
 
@@ -37,23 +37,23 @@ describe Dumper do
       let(:new_actual) { 'actual_with_some_phrase' }
 
       it 'sets dumps_location' do
-        Dumper.setup { |c| c.dumps_location = new_location }
-        expect(Dumper.settings.dumps_location).to eq(new_location)
+        DumpHook.setup { |c| c.dumps_location = new_location }
+        expect(DumpHook.settings.dumps_location).to eq(new_location)
       end
 
       it 'sets remove_old_dumps' do
-        Dumper.setup { |c| c.remove_old_dumps = new_remove_old_dumps }
-        expect(Dumper.settings.remove_old_dumps).to eq(new_remove_old_dumps)
+        DumpHook.setup { |c| c.remove_old_dumps = new_remove_old_dumps }
+        expect(DumpHook.settings.remove_old_dumps).to eq(new_remove_old_dumps)
       end
 
       it 'sets database' do
-        Dumper.setup { |c| c.database = new_database }
-        expect(Dumper.settings.database).to eq(new_database)
+        DumpHook.setup { |c| c.database = new_database }
+        expect(DumpHook.settings.database).to eq(new_database)
       end
 
       it 'sets actual' do
-        Dumper.setup { |c| c.actual = new_actual }
-        expect(Dumper.settings.actual).to eq(new_actual)
+        DumpHook.setup { |c| c.actual = new_actual }
+        expect(DumpHook.settings.actual).to eq(new_actual)
       end
     end
   end
@@ -62,14 +62,14 @@ describe Dumper do
     let(:object) { object = Object.new }
 
     before(:each) do
-      object.extend(Dumper)
+      object.extend(DumpHook)
     end
 
     context 'folders creation' do
       let(:dumps_location) { "tmp1/tmp2/tmp3" }
 
       before(:each) do
-        Dumper.setup do |c|
+        DumpHook.setup do |c|
           c.dumps_location = dumps_location
         end
       end
@@ -85,13 +85,13 @@ describe Dumper do
     end
 
     context 'postgres' do
-      let(:database) { 'dumper_test' }
+      let(:database) { 'dump_hook_test' }
       let(:db) { Sequel.connect(adapter: 'postgres', database: database) }
 
       before(:each) do
         Kernel.system('createdb', database)
 
-        Dumper.setup do |c|
+        DumpHook.setup do |c|
           c.database = database
         end
       end
@@ -104,7 +104,7 @@ describe Dumper do
 
       it 'creates dump file' do
         object.execute_with_dump("some_dump") { }
-        expect(File.exists?("tmp/dumper/some_dump.dump")).to be(true)
+        expect(File.exists?("tmp/dump_hook/some_dump.dump")).to be(true)
       end
 
       context 'dump content' do
@@ -128,14 +128,14 @@ describe Dumper do
     end
 
     context 'mysql' do
-      let(:database) { 'dumper_test' }
+      let(:database) { 'dump_hook_test' }
       let(:username) { 'root' }
       let(:db) { Sequel.connect(adapter: 'mysql2', user: username) }
 
       before(:each) do
         db.run("CREATE DATABASE #{database}")
         db.run("USE #{database}")
-        Dumper.setup do |c|
+        DumpHook.setup do |c|
           c.database = database
           c.database_type = 'mysql'
           c.username = username
@@ -151,7 +151,7 @@ describe Dumper do
 
       it 'creates dump file' do
         object.execute_with_dump("some_dump") { }
-        expect(File.exists?("tmp/dumper/some_dump.dump")).to be(true)
+        expect(File.exists?("tmp/dump_hook/some_dump.dump")).to be(true)
       end
 
       context 'dump content' do
