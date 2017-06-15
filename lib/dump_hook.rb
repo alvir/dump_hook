@@ -104,9 +104,9 @@ module DumpHook
 
   def pg_connection_args
     args = ['-d', settings.database]
-    args << "-U #{settings.username}" if settings.username
-    args << "-h #{settings.host}" if settings.host
-    args << "-p #{settings.port}" if settings.port
+    args.concat(['-U', settings.username]) if settings.username
+    args.concat(['-h', settings.host]) if settings.host
+    args.concat(['-p', settings.port]) if settings.port
     args
   end
 end
