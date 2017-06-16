@@ -3,7 +3,15 @@ require "timecop"
 
 module DumpHook
   class Settings
-    attr_accessor :database, :dumps_location, :remove_old_dumps, :actual, :database_type, :username, :password
+    attr_accessor :database,
+                  :dumps_location,
+                  :remove_old_dumps,
+                  :actual,
+                  :database_type,
+                  :username,
+                  :password,
+                  :host,
+                  :port
 
     def initialize
       @database = 'please set database'
@@ -49,7 +57,7 @@ module DumpHook
     case settings.database_type
       when 'postgres'
         args = ['-a', '-x', '-O', '-f', filename, '-Fc', '-T', 'schema_migrations']
-        args << settings.database
+        args.concat(pg_connection_args)
         Kernel.system("pg_dump", *args)
       when 'mysql'
         args = mysql_connection_args
@@ -63,7 +71,8 @@ module DumpHook
   def restore_dump(filename)
     case settings.database_type
       when 'postgres'
-        args = ['-d', settings.database, filename]
+        args = pg_connection_args
+        args << filename
         Kernel.system("pg_restore", *args)
       when 'mysql'
         args = mysql_connection_args
@@ -90,6 +99,14 @@ module DumpHook
     args = [settings.database]
     args.concat ['--user', settings.username] if settings.username
     args << "--password=#{settings.password}" if settings.password
+    args
+  end
+
+  def pg_connection_args
+    args = ['-d', settings.database]
+    args.concat(['-U', settings.username]) if settings.username
+    args.concat(['-h', settings.host]) if settings.host
+    args.concat(['-p', settings.port]) if settings.port
     args
   end
 end

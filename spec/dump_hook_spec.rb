@@ -34,6 +34,9 @@ describe DumpHook do
       let(:new_location) { 'new_location' }
       let(:new_remove_old_dumps) { false }
       let(:new_database) { 'new_database' }
+      let(:new_username) { 'new_username' }
+      let(:new_host) { 'example.com' }
+      let(:new_port) { 600 }
       let(:new_actual) { 'actual_with_some_phrase' }
 
       it 'sets dumps_location' do
@@ -49,6 +52,21 @@ describe DumpHook do
       it 'sets database' do
         DumpHook.setup { |c| c.database = new_database }
         expect(DumpHook.settings.database).to eq(new_database)
+      end
+
+      it 'sets username' do
+        DumpHook.setup { |c| c.username = new_username }
+        expect(DumpHook.settings.username).to eq(new_username)
+      end
+
+      it 'sets host' do
+        DumpHook.setup { |c| c.host = new_host }
+        expect(DumpHook.settings.host).to eq(new_host)
+      end
+
+      it 'sets port' do
+        DumpHook.setup { |c| c.port = new_port }
+        expect(DumpHook.settings.port).to eq(new_port)
       end
 
       it 'sets actual' do
