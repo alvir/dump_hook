@@ -116,6 +116,7 @@ module ProjectData
       # другие действия по заполнению данных касающихся проектов
 
       logout
+    end  
   end
 end
 ```
