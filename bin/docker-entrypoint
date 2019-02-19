@@ -1,0 +1,6 @@
+#!/bin/sh
+/usr/share/mariadb/mysql.server start
+sudo -u postgres pg_ctl start -D /var/lib/postgresql/data
+$1
+sudo -u postgres pg_ctl stop -D /var/lib/postgresql/data
+/usr/share/mariadb/mysql.server stop

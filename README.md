@@ -159,6 +159,25 @@ Feature: Drag and drop feature
 
 К сожалению, пока нет примеров без Cucumber, но есть ощущение, что всё должно быть неплохо и без него.
 
+## Using docker to run specs
+
+Create container:
+```
+docker build -t dump-hook .
+```
+Run `rspec` using the code that was copied during the creation of the container:
+```
+docker run -it dump-hook
+```
+Run `rspec` using the current code:
+```
+docker run -it -v `pwd`:/gem dump-hook
+```
+Run shell in the container:
+```
+docker run -it -v `pwd`:/gem dump-hook /bin/sh
+```
+
 ## TODO
 
 * Поддержка других баз кроме postgres и mysql
