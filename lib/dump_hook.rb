@@ -1,5 +1,6 @@
 require "dump_hook/version"
 require "timecop"
+require "connection_args"
 
 module DumpHook
   class Settings
@@ -103,10 +104,6 @@ module DumpHook
   end
 
   def pg_connection_args
-    args = ['-d', settings.database]
-    args.concat(['-U', settings.username]) if settings.username
-    args.concat(['-h', settings.host]) if settings.host
-    args.concat(['-p', settings.port]) if settings.port
-    args
+    ConnectionArgs.for_postgres(settings)
   end
 end
