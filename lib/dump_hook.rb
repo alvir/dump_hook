@@ -23,13 +23,48 @@ module DumpHook
     end
   end
 
-  class << self
-    attr_accessor :settings
+  module Dumpers
+    class Base
+      def initialize(connection_settings)
+        @connection_settings = connection_settings
+      end
+    end
+
+    class Postgres < Base
+      def dump(filename)
+        args = ['-a', '-x', '-O', '-f', filename, '-Fc', '-T', 'schema_migrations']
+        args.concat(['-d', @connection_settings.database])
+        Kernel.system("pg_dump", *args)
+      end
+
+      def restore
+
+      end
+    end
+
+    class MySql < Base
+      def dump(filename)
+        args = [@connection_settings.database, "--user", @connection_settings.username]
+        args << "--compress"
+        args.concat(["--result-file", filename])
+        args.concat(["--ignore-table", "#{@connection_settings.database}.schema_migrations"])
+        args << "--password=#{@connection_settings.password}" if @connection_settings.password
+        Kernel.system("mysqldump", *args)
+      end
+
+      def restore
+
+      end
+    end
   end
 
-  def self.setup
-    self.settings = Settings.new
-    yield(settings)
+  class << self
+    attr_accessor :settings
+
+    def setup
+      self.settings = Settings.new
+      yield(settings)
+    end
   end
 
   def execute_with_dump(name, opts={}, &block)
@@ -57,40 +92,32 @@ module DumpHook
 
   def store_dump(filename)
     if settings.sources.empty?
-      case settings.database_type
-      when 'postgres'
-        args = ['-a', '-x', '-O', '-f', filename, '-Fc', '-T', 'schema_migrations']
-        args.concat(pg_connection_args)
-        Kernel.system("pg_dump", *args)
-      when 'mysql'
-        args = mysql_connection_args
-        args << "--compress"
-        args.concat ["--result-file", filename]
-        args.concat ["--ignore-table", "#{settings.database}.schema_migrations"]
-        Kernel.system("mysqldump", *args)
-      end
+      dumper = case settings.database_type
+               when "postgres"
+                 Dumpers::Postgres.new(settings)
+               when "mysql"
+                 Dumpers::MySql.new(settings)
+               end
+      dumper.dump(filename)
     else
       FileUtils.mkdir_p(filename)
       settings.sources.each do |name, parameters|
         filename_with_namespace = File.join(filename, "#{name}.dump")
-        case parameters[:type]
-        when :postgres
-          args = ['-a', '-x', '-O', '-f', filename_with_namespace, '-Fc', '-T', 'schema_migrations']
-          args.concat(['-d', parameters[:database]])
-          Kernel.system("pg_dump", *args)
-        when :mysql
-          args = [parameters[:database], "--user", parameters[:username]]
-          args << "--compress"
-          args.concat(["--result-file", filename_with_namespace])
-          args.concat(["--ignore-table", "#{parameters[:database]}.schema_migrations"])
-          Kernel.system("mysqldump", *args)
-        end
+        connection_settings = OpenStruct.new(parameters.slice(:database, :username))
+        dumper = case parameters[:type]
+                 when :postgres
+                   Dumpers::Postgres.new(connection_settings)
+                 when :mysql
+                   Dumpers::MySql.new(connection_settings)
+                 end
+        dumper.dump(filename_with_namespace)
       end
     end
   end
 
   def restore_dump(filename)
-    case settings.database_type
+    if settings.sources.empty?
+      case settings.database_type
       when 'postgres'
         args = pg_connection_args
         args << filename
@@ -99,6 +126,22 @@ module DumpHook
         args = mysql_connection_args
         args.concat ["-e", "source #{filename}"]
         Kernel.system("mysql", *args)
+      end
+    else
+      FileUtils.mkdir_p(filename)
+      settings.sources.each do |name, parameters|
+        filename_with_namespace = File.join(filename, "#{name}.dump")
+        case parameters[:type]
+        when :postgres
+          args = ['-d', parameters[:database]]
+          args << filename_with_namespace
+          Kernel.system("pg_restore", *args)
+        when :mysql
+          args = [parameters[:database], "--user", parameters[:username]]
+          args.concat ["-e", "source #{filename_with_namespace}"]
+          Kernel.system("mysql", *args)
+        end
+      end
     end
   end
 
