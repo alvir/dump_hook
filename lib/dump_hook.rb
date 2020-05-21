@@ -34,26 +34,37 @@ module DumpHook
       def dump(filename)
         args = ['-a', '-x', '-O', '-f', filename, '-Fc', '-T', 'schema_migrations']
         args.concat(['-d', @connection_settings.database])
+        args.concat(['-h', @connection_settings.host]) if @connection_settings.host
+        args.concat(['-p', @connection_settings.port]) if @connection_settings.port
         Kernel.system("pg_dump", *args)
       end
 
-      def restore
-
+      def restore(filename)
+        args = ['-d', @connection_settings.database]
+        args.concat(['-h', @connection_settings.host]) if @connection_settings.host
+        args.concat(['-p', @connection_settings.port]) if @connection_settings.port
+        args << filename
+        Kernel.system("pg_restore", *args)
       end
     end
 
     class MySql < Base
       def dump(filename)
-        args = [@connection_settings.database, "--user", @connection_settings.username]
+        args = [@connection_settings.database]
         args << "--compress"
         args.concat(["--result-file", filename])
         args.concat(["--ignore-table", "#{@connection_settings.database}.schema_migrations"])
+        args.concat ['--user', @connection_settings.username] if @connection_settings.username
         args << "--password=#{@connection_settings.password}" if @connection_settings.password
         Kernel.system("mysqldump", *args)
       end
 
-      def restore
-
+      def restore(filename)
+        args = [@connection_settings.database]
+        args.concat ["-e", "source #{filename}"]
+        args.concat ['--user', @connection_settings.username] if @connection_settings.username
+        args << "--password=#{@connection_settings.password}" if @connection_settings.password
+        Kernel.system("mysql", *args)
       end
     end
   end
@@ -103,7 +114,7 @@ module DumpHook
       FileUtils.mkdir_p(filename)
       settings.sources.each do |name, parameters|
         filename_with_namespace = File.join(filename, "#{name}.dump")
-        connection_settings = OpenStruct.new(parameters.slice(:database, :username))
+        connection_settings = OpenStruct.new(parameters.slice(:database, :username, :password))
         dumper = case parameters[:type]
                  when :postgres
                    Dumpers::Postgres.new(connection_settings)
@@ -117,30 +128,25 @@ module DumpHook
 
   def restore_dump(filename)
     if settings.sources.empty?
-      case settings.database_type
-      when 'postgres'
-        args = pg_connection_args
-        args << filename
-        Kernel.system("pg_restore", *args)
-      when 'mysql'
-        args = mysql_connection_args
-        args.concat ["-e", "source #{filename}"]
-        Kernel.system("mysql", *args)
-      end
+      dumper = case settings.database_type
+               when 'postgres'
+                 Dumpers::Postgres.new(settings)
+               when 'mysql'
+                 Dumpers::MySql.new(settings)
+               end
+      dumper.restore(filename)
     else
       FileUtils.mkdir_p(filename)
       settings.sources.each do |name, parameters|
         filename_with_namespace = File.join(filename, "#{name}.dump")
-        case parameters[:type]
-        when :postgres
-          args = ['-d', parameters[:database]]
-          args << filename_with_namespace
-          Kernel.system("pg_restore", *args)
-        when :mysql
-          args = [parameters[:database], "--user", parameters[:username]]
-          args.concat ["-e", "source #{filename_with_namespace}"]
-          Kernel.system("mysql", *args)
-        end
+        connection_settings = OpenStruct.new(parameters.slice(:database, :username, :password))
+        dumper = case parameters[:type]
+                 when :postgres
+                   Dumpers::Postgres.new(connection_settings)
+                 when :mysql
+                   Dumpers::MySql.new(connection_settings)
+                 end
+        dumper.restore(filename_with_namespace)
       end
     end
   end
@@ -158,20 +164,5 @@ module DumpHook
 
   def create_dirs_if_not_exists
     FileUtils.mkdir_p(settings.dumps_location)
-  end
-
-  def mysql_connection_args
-    args = [settings.database]
-    args.concat ['--user', settings.username] if settings.username
-    args << "--password=#{settings.password}" if settings.password
-    args
-  end
-
-  def pg_connection_args
-    args = ['-d', settings.database]
-    args.concat(['-U', settings.username]) if settings.username
-    args.concat(['-h', settings.host]) if settings.host
-    args.concat(['-p', settings.port]) if settings.port
-    args
   end
 end
