@@ -82,6 +82,8 @@ module DumpHook
                  Hooks::Postgres.new(connection_settings)
                when :mysql
                  Hooks::MySql.new(connection_settings)
+               else
+                 raise "Unsupported type of source"
                end
       dumper.dump(filename_with_namespace)
     end
@@ -97,6 +99,8 @@ module DumpHook
                  Hooks::Postgres.new(connection_settings)
                when :mysql
                  Hooks::MySql.new(connection_settings)
+               else
+                 raise "Unsupported type of source"
                end
       dumper.restore(filename_with_namespace)
     end
