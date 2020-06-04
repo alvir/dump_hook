@@ -1,5 +1,8 @@
 require "dump_hook/version"
+require "dump_hook/hooks/mysql"
+require "dump_hook/hooks/postgres"
 require "timecop"
+require "ostruct"
 
 module DumpHook
   class Settings
@@ -12,69 +15,37 @@ module DumpHook
                   :password,
                   :host,
                   :port,
-                  :sources
+                  :sources,
+                  :with_sources
 
     def initialize
-      @database = 'please set database'
       @database_type = 'postgres'
       @dumps_location = 'tmp/dump_hook'
       @remove_old_dumps = true
+      @with_sources = false
       @sources = {}
-    end
-  end
-
-  module Dumpers
-    class Base
-      def initialize(connection_settings)
-        @connection_settings = connection_settings
-      end
-    end
-
-    class Postgres < Base
-      def dump(filename)
-        args = ['-a', '-x', '-O', '-f', filename, '-Fc', '-T', 'schema_migrations']
-        args.concat(['-d', @connection_settings.database])
-        args.concat(['-h', @connection_settings.host]) if @connection_settings.host
-        args.concat(['-p', @connection_settings.port]) if @connection_settings.port
-        Kernel.system("pg_dump", *args)
-      end
-
-      def restore(filename)
-        args = ['-d', @connection_settings.database]
-        args.concat(['-h', @connection_settings.host]) if @connection_settings.host
-        args.concat(['-p', @connection_settings.port]) if @connection_settings.port
-        args << filename
-        Kernel.system("pg_restore", *args)
-      end
-    end
-
-    class MySql < Base
-      def dump(filename)
-        args = [@connection_settings.database]
-        args << "--compress"
-        args.concat(["--result-file", filename])
-        args.concat(["--ignore-table", "#{@connection_settings.database}.schema_migrations"])
-        args.concat ['--user', @connection_settings.username] if @connection_settings.username
-        args << "--password=#{@connection_settings.password}" if @connection_settings.password
-        Kernel.system("mysqldump", *args)
-      end
-
-      def restore(filename)
-        args = [@connection_settings.database]
-        args.concat ["-e", "source #{filename}"]
-        args.concat ['--user', @connection_settings.username] if @connection_settings.username
-        args << "--password=#{@connection_settings.password}" if @connection_settings.password
-        Kernel.system("mysql", *args)
-      end
     end
   end
 
   class << self
     attr_accessor :settings
+    attr_accessor :hooks
 
     def setup
       self.settings = Settings.new
       yield(settings)
+      unless settings.sources.empty?
+        settings.with_sources = true
+      end
+      unless settings.database.nil?
+        single_source = { type: settings.database_type.to_sym,
+                          database: settings.database,
+                          username: settings.username,
+                          password: settings.password,
+                          host: settings.host,
+                          port: settings.port }
+        self.settings.sources[settings.database_type.to_sym] = single_source
+      end
     end
   end
 
@@ -102,52 +73,32 @@ module DumpHook
   end
 
   def store_dump(filename)
-    if settings.sources.empty?
-      dumper = case settings.database_type
-               when "postgres"
-                 Dumpers::Postgres.new(settings)
-               when "mysql"
-                 Dumpers::MySql.new(settings)
+    FileUtils.mkdir_p(filename)
+    settings.sources.each do |name, parameters|
+      filename_with_namespace = File.join(filename, "#{name}.dump")
+      connection_settings = OpenStruct.new(parameters.slice(:database, :username, :password))
+      dumper = case parameters[:type]
+               when :postgres
+                 Hooks::Postgres.new(connection_settings)
+               when :mysql
+                 Hooks::MySql.new(connection_settings)
                end
-      dumper.dump(filename)
-    else
-      FileUtils.mkdir_p(filename)
-      settings.sources.each do |name, parameters|
-        filename_with_namespace = File.join(filename, "#{name}.dump")
-        connection_settings = OpenStruct.new(parameters.slice(:database, :username, :password))
-        dumper = case parameters[:type]
-                 when :postgres
-                   Dumpers::Postgres.new(connection_settings)
-                 when :mysql
-                   Dumpers::MySql.new(connection_settings)
-                 end
-        dumper.dump(filename_with_namespace)
-      end
+      dumper.dump(filename_with_namespace)
     end
   end
 
   def restore_dump(filename)
-    if settings.sources.empty?
-      dumper = case settings.database_type
-               when 'postgres'
-                 Dumpers::Postgres.new(settings)
-               when 'mysql'
-                 Dumpers::MySql.new(settings)
+    FileUtils.mkdir_p(filename)
+    settings.sources.each do |name, parameters|
+      filename_with_namespace = File.join(filename, "#{name}.dump")
+      connection_settings = OpenStruct.new(parameters.slice(:database, :username, :password))
+      dumper = case parameters[:type]
+               when :postgres
+                 Hooks::Postgres.new(connection_settings)
+               when :mysql
+                 Hooks::MySql.new(connection_settings)
                end
-      dumper.restore(filename)
-    else
-      FileUtils.mkdir_p(filename)
-      settings.sources.each do |name, parameters|
-        filename_with_namespace = File.join(filename, "#{name}.dump")
-        connection_settings = OpenStruct.new(parameters.slice(:database, :username, :password))
-        dumper = case parameters[:type]
-                 when :postgres
-                   Dumpers::Postgres.new(connection_settings)
-                 when :mysql
-                   Dumpers::MySql.new(connection_settings)
-                 end
-        dumper.restore(filename_with_namespace)
-      end
+      dumper.restore(filename_with_namespace)
     end
   end
 
@@ -159,7 +110,8 @@ module DumpHook
       name_with_created_on = "#{name_with_created_on}_actual#{actual}"
     end
     full_path = "#{settings.dumps_location}/#{name_with_created_on}"
-    settings.sources.empty? ? "#{full_path}.dump" : full_path
+
+    settings.with_sources ? full_path : "#{full_path}.dump"
   end
 
   def create_dirs_if_not_exists

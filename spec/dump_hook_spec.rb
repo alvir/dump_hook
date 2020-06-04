@@ -21,10 +21,6 @@ describe DumpHook do
         expect(DumpHook.settings.remove_old_dumps).to eq(true)
       end
 
-      it 'sets database' do
-        expect(DumpHook.settings.database).to eq('please set database')
-      end
-
       it 'does not set actual' do
         expect(DumpHook.settings.actual).to be nil
       end
@@ -147,8 +143,7 @@ describe DumpHook do
 
       it 'uses dump content if dump exists' do
         db.run("delete from t")
-        object.execute_with_dump("some_dump") { }
-        expect(db[:t].map([:a, :b])).to eq([['a', 'b']])
+        expect { object.execute_with_dump("some_dump") { } }.to change { db[:t].map([:a, :b]) }.to([['a', 'b']])
       end
     end
 
