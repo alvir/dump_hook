@@ -76,7 +76,7 @@ module DumpHook
     FileUtils.mkdir_p(filename)
     settings.sources.each do |name, parameters|
       filename_with_namespace = File.join(filename, "#{name}.dump")
-      connection_settings = OpenStruct.new(parameters.slice(:database, :username, :password))
+      connection_settings = OpenStruct.new(parameters.slice(:database, :username, :password, :port, :host))
       dumper = case parameters[:type]
                when :postgres
                  Hooks::Postgres.new(connection_settings)
@@ -91,7 +91,7 @@ module DumpHook
     FileUtils.mkdir_p(filename)
     settings.sources.each do |name, parameters|
       filename_with_namespace = File.join(filename, "#{name}.dump")
-      connection_settings = OpenStruct.new(parameters.slice(:database, :username, :password))
+      connection_settings = OpenStruct.new(parameters.slice(:database, :username, :password, :port, :host))
       dumper = case parameters[:type]
                when :postgres
                  Hooks::Postgres.new(connection_settings)

@@ -8,6 +8,7 @@ module DumpHook
       def dump(filename)
         args = ['-a', '-x', '-O', '-f', filename, '-Fc', '-T', 'schema_migrations']
         args.concat(['-d', @connection_settings.database])
+        args.concat(['-U', @connection_settings.username]) if @connection_settings.username
         args.concat(['-h', @connection_settings.host]) if @connection_settings.host
         args.concat(['-p', @connection_settings.port]) if @connection_settings.port
         Kernel.system("pg_dump", *args)
@@ -15,6 +16,7 @@ module DumpHook
 
       def restore(filename)
         args = ['-d', @connection_settings.database]
+        args.concat(['-U', @connection_settings.username]) if @connection_settings.username
         args.concat(['-h', @connection_settings.host]) if @connection_settings.host
         args.concat(['-p', @connection_settings.port]) if @connection_settings.port
         args << filename
