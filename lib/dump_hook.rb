@@ -97,8 +97,10 @@ module DumpHook
 
   def mysql_connection_args
     args = [settings.database]
-    args.concat ['--user', settings.username] if settings.username
-    args << "--password=#{settings.password}" if settings.password
+    args.concat ["-u", settings.username] if settings.username
+    args.concat ["-p", settings.password] if settings.password
+    args.concat ["-h", settings.host] if settings.host
+    args.concat ["-P", settings.port] if settings.port
     args
   end
 
