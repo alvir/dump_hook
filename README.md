@@ -1,7 +1,7 @@
 # Dump Hook
 
-A library, what helps to cache your data by performing some user actions. We use in our acceptance tests to enhance 
-performance of use clicks and actions of preparing data for the tests. Now we cache just Postgres and MySql db and 
+A library that helps cache your data received from performing user actions in tests. We use it in our acceptance tests to enhance 
+performance of preparing data for the tests. It contains ways to cache Postgres and MySql DBs and 
 you need to take care about other sources your own.  
 
 ## Installation
@@ -28,7 +28,7 @@ World(DumpHook)
 
 ## Configuration
 
-There are several parameters to make it run and manage.
+There are several parameters to run and manage it.
 
 ```ruby
 DumpHook.setup do |config|
