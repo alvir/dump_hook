@@ -146,6 +146,11 @@ module YourServiceHook
   end
 end
 ```
+and add it after `DumpHook` module
+```ruby
+include DumpHook
+include YourServiceHook
+```
 
 ## TODO
 
