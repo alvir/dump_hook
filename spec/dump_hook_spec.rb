@@ -146,7 +146,7 @@ describe DumpHook do
             DumpHook.settings.actual = 2
           end
 
-          it 'creates a new dump file and remove old dumps by default' do
+          it "creates a new dump file and remove old dumps by default" do
             object.execute_with_dump("some_dump") { }
             expect(Dir.entries("tmp/dump_hook")).to_not include("some_dump_actual1.dump")
             expect(Dir.entries("tmp/dump_hook")).to include("some_dump_actual2.dump")
@@ -157,7 +157,7 @@ describe DumpHook do
               DumpHook.settings.remove_old_dumps = false
             end
 
-            it 'creates a new dump file' do
+            it "creates a new dump file" do
               object.execute_with_dump("some_dump") { }
               expect(Dir.entries("tmp/dump_hook")).to include("some_dump_actual1.dump")
               expect(Dir.entries("tmp/dump_hook")).to include("some_dump_actual2.dump")
@@ -166,7 +166,7 @@ describe DumpHook do
         end
       end
 
-      context 'dump content' do
+      context "dump content" do
         before(:each) do
           object.execute_with_dump("some_dump") do
             db.run("create table t (a text, b text)")
