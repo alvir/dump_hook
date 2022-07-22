@@ -122,9 +122,9 @@ Feature: User can modify project
 In this example `There is the user data` is step what wraps the capybara example
 
 ## How to add new sources or hooks
-_Disclaimer_: We understand the current way is not pretty good and work on enhancements
+_Disclaimer_: We are working on enhancements
 
-If you need to add yet one source, e.g we have yet one service and need to dump its data you may use something similar
+If you need to add yet one source, e.g "we have yet one service and need to dump its data" you may use something similar
 ```ruby
 module YourServiceHook
   def store_dump(filename)
@@ -152,7 +152,6 @@ end
 * Dump other sources like `cookies`, Elastic Search, etc. 
 * Enhance ways of adding hooks to extend current sources without overriding(In progress)
 * Add some sugar to create common dumps for CI or `parallel_tests`
-
 
 ## License
 
