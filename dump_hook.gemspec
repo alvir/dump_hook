@@ -4,14 +4,14 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'dump_hook/version'
 
 Gem::Specification.new do |spec|
-  spec.name          = "dump-hook"
+  spec.name          = "dump_hook"
   spec.version       = DumpHook::VERSION
   spec.authors       = ["Alexander Ryazantsev"]
   spec.email         = ["shurik.v.r@gmail.com"]
 
   spec.summary       = %q{Dumps to cache you backgrounds}
   spec.description   = %q{We use it for our capybara/Cucumber features.}
-  spec.homepage    = "https://github.com/Anadea/dump-hook"
+  spec.homepage    = "https://github.com/Anadea/dump_hook"
   spec.license       = "MIT"
 
   spec.files         = `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
