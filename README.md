@@ -7,7 +7,7 @@ you need to take care about other sources your own.
 ## Installation
 
 ```ruby
-gem 'dump-hook'
+gem 'dump_hook'
 ```
 
 For Rspec/Capybara add to `rails_helper.rb`:
