@@ -35,7 +35,7 @@ module DumpHook
     actual = opts[:actual] || settings.actual
     create_dirs_if_not_exists
     filename = full_filename(name, created_on, actual)
-    if File.exists?(filename)
+    if File.exist?(filename)
       restore_dump(filename)
     else
       if created_on
@@ -56,7 +56,7 @@ module DumpHook
   def store_dump(filename)
     case settings.database_type
       when 'postgres'
-        args = ['-a', '-x', '-O', '-f', filename, '-Fc', '-T', 'schema_migrations']
+        args = ['-a', '-x', '-O', '-f', filename, '-Fc', '-T', 'schema_migrations', '-T', 'ar_internal_metadata']
         args.concat(pg_connection_args)
         Kernel.system("pg_dump", *args)
       when 'mysql'
@@ -64,6 +64,7 @@ module DumpHook
         args << "--compress"
         args.concat ["--result-file", filename]
         args.concat ["--ignore-table", "#{settings.database}.schema_migrations"]
+        args.concat ["--ignore-table", "#{settings.database}.ar_internal_metadata"]
         Kernel.system("mysqldump", *args)
     end
   end
