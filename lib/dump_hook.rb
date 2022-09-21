@@ -7,6 +7,7 @@ module DumpHook
                   :dumps_location,
                   :remove_old_dumps,
                   :actual,
+                  :recreate,
                   :database_type,
                   :username,
                   :password,
@@ -18,11 +19,12 @@ module DumpHook
       @database_type = 'postgres'
       @dumps_location = 'tmp/dump_hook'
       @remove_old_dumps = true
+      @recreate = false
     end
   end
 
   class << self
-    attr_accessor :settings
+    attr_accessor :settings, :recreate
   end
 
   def self.setup
@@ -35,7 +37,7 @@ module DumpHook
     actual = opts[:actual] || settings.actual
     create_dirs_if_not_exists
     filename = full_filename(name, created_on, actual)
-    if File.exist?(filename)
+    if !recreate?(filename) && File.exist?(filename)
       restore_dump(filename)
     else
       if created_on
@@ -111,5 +113,12 @@ module DumpHook
     args.concat(['-h', settings.host]) if settings.host
     args.concat(['-p', settings.port]) if settings.port
     args
+  end
+
+  def recreate?(filename)
+    DumpHook.recreate ||= []
+    result = (settings.recreate || ENV["DUMP_HOOK"] == "recreate") && !DumpHook.recreate.include?(filename)
+    DumpHook.recreate << filename if result
+    result
   end
 end

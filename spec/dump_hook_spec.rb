@@ -118,11 +118,12 @@ describe DumpHook do
         db.disconnect
         Kernel.system('dropdb', database)
         FileUtils.rm_r('tmp')
+        DumpHook.recreate = nil
       end
 
       it 'creates dump file' do
         object.execute_with_dump("some_dump") { }
-        expect(File.exists?("tmp/dump_hook/some_dump.dump")).to be(true)
+        expect(File.exist?("tmp/dump_hook/some_dump.dump")).to be(true)
       end
 
       context "actual" do
@@ -162,6 +163,70 @@ describe DumpHook do
               expect(Dir.entries("tmp/dump_hook")).to include("some_dump_actual1.dump")
               expect(Dir.entries("tmp/dump_hook")).to include("some_dump_actual2.dump")
             end
+          end
+        end
+      end
+
+      context "recreate" do
+        before(:each) do
+          db.run("create table t (a text, b text)")
+          object.execute_with_dump("some_dump") do
+            db.run("insert into t values ('a', 'b')")
+          end
+        end
+
+        def new_dump
+          object.execute_with_dump("some_dump") do
+            db.run("insert into t values ('a', 'b')")
+            db.run("insert into t values ('c', 'd')")
+          end
+        end
+
+        context "when recreate is disabled" do
+          it "doesn't change file" do
+            expect { new_dump }.to_not change { File.read("tmp/dump_hook/some_dump.dump") }
+          end
+        end
+
+        context "when recreate is enabled" do
+          before(:each) do
+            DumpHook.settings.recreate = true
+          end
+
+          it "changes file just the first time" do
+            expect { new_dump }.to change { File.read("tmp/dump_hook/some_dump.dump") }
+            expect { new_dump }.to_not change { File.read("tmp/dump_hook/some_dump.dump") }
+          end
+
+          context "and there are more than one dump" do
+            before(:each) do
+              object.execute_with_dump("another_dump") do
+                db.run("insert into t values ('e', 'f')")
+              end
+            end
+
+            def new_another_dump
+              object.execute_with_dump("another_dump") do
+                db.run("insert into t values ('e', 'f')")
+                db.run("insert into t values ('g', 'h')")
+              end
+            end
+
+            it "changes file just the first time" do
+              expect { new_dump }.to change { File.read("tmp/dump_hook/some_dump.dump") }
+                                 .and not_change { File.read("tmp/dump_hook/another_dump.dump") }
+            end
+          end
+        end
+
+        context "when recreate is enabled using ENV" do
+          before(:each) do
+            ENV["DUMP_HOOK"] = "recreate"
+          end
+
+          it "changes file" do
+            expect { new_dump }.to change { File.read("tmp/dump_hook/some_dump.dump") }
+            expect { new_dump }.to_not change { File.read("tmp/dump_hook/some_dump.dump") }
           end
         end
       end
@@ -210,7 +275,7 @@ describe DumpHook do
 
       it 'creates dump file' do
         object.execute_with_dump("some_dump") { }
-        expect(File.exists?("tmp/dump_hook/some_dump.dump")).to be(true)
+        expect(File.exist?("tmp/dump_hook/some_dump.dump")).to be(true)
       end
 
       context 'dump content' do
