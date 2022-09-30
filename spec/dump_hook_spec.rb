@@ -126,42 +126,80 @@ describe DumpHook do
         expect(File.exist?("tmp/dump_hook/some_dump.dump")).to be(true)
       end
 
-      context "actual" do
-        before(:each) do
-          DumpHook.settings.actual = 1
-        end
-
-        context "when actual is permanent" do
+      context "[actual]" do
+        context "in settings" do
           before(:each) do
-            object.execute_with_dump("some_dump") { }
+            DumpHook.settings.actual = 1
           end
 
-          it 'creates dump file' do
-            expect(Dir.entries("tmp/dump_hook")).to include("some_dump_actual1.dump")
-          end
-        end
-
-        context "when actual is changing" do
-          before(:each) do
-            object.execute_with_dump("some_dump") { }
-            DumpHook.settings.actual = 2
-          end
-
-          it "creates a new dump file and remove old dumps by default" do
-            object.execute_with_dump("some_dump") { }
-            expect(Dir.entries("tmp/dump_hook")).to_not include("some_dump_actual1.dump")
-            expect(Dir.entries("tmp/dump_hook")).to include("some_dump_actual2.dump")
-          end
-
-          context "and remove_old_dumps is disabled" do
+          context "when actual is permanent" do
             before(:each) do
-              DumpHook.settings.remove_old_dumps = false
+              object.execute_with_dump("some_dump") { }
             end
 
-            it "creates a new dump file" do
-              object.execute_with_dump("some_dump") { }
+            it 'creates dump file' do
               expect(Dir.entries("tmp/dump_hook")).to include("some_dump_actual1.dump")
+            end
+          end
+
+          context "when actual is changing" do
+            before(:each) do
+              object.execute_with_dump("some_dump") { }
+              DumpHook.settings.actual = 2
+            end
+
+            it "creates a new dump file and remove old dumps by default" do
+              object.execute_with_dump("some_dump") { }
+              expect(Dir.entries("tmp/dump_hook")).to_not include("some_dump_actual1.dump")
               expect(Dir.entries("tmp/dump_hook")).to include("some_dump_actual2.dump")
+            end
+
+            context "and remove_old_dumps is disabled" do
+              before(:each) do
+                DumpHook.settings.remove_old_dumps = false
+              end
+
+              it "creates a new dump file" do
+                object.execute_with_dump("some_dump") { }
+                expect(Dir.entries("tmp/dump_hook")).to include("some_dump_actual1.dump")
+                expect(Dir.entries("tmp/dump_hook")).to include("some_dump_actual2.dump")
+              end
+            end
+          end
+        end
+
+        context "in parameters" do
+          context "when actual is permanent" do
+            before(:each) do
+              object.execute_with_dump("some_dump", actual: 1) { }
+            end
+
+            it 'creates dump file' do
+              expect(Dir.entries("tmp/dump_hook")).to include("some_dump_actual1.dump")
+            end
+          end
+
+          context "when actual is changing" do
+            before(:each) do
+              object.execute_with_dump("some_dump", actual: 1) { }
+            end
+
+            it "creates a new dump file and remove old dumps by default" do
+              object.execute_with_dump("some_dump", actual: 2) { }
+              expect(Dir.entries("tmp/dump_hook")).to_not include("some_dump_actual1.dump")
+              expect(Dir.entries("tmp/dump_hook")).to include("some_dump_actual2.dump")
+            end
+
+            context "and remove_old_dumps is disabled" do
+              before(:each) do
+                DumpHook.settings.remove_old_dumps = false
+              end
+
+              it "creates a new dump file" do
+                object.execute_with_dump("some_dump", actual: 2) { }
+                expect(Dir.entries("tmp/dump_hook")).to include("some_dump_actual1.dump")
+                expect(Dir.entries("tmp/dump_hook")).to include("some_dump_actual2.dump")
+              end
             end
           end
         end
@@ -205,13 +243,6 @@ describe DumpHook do
               end
             end
 
-            def new_another_dump
-              object.execute_with_dump("another_dump") do
-                db.run("insert into t values ('e', 'f')")
-                db.run("insert into t values ('g', 'h')")
-              end
-            end
-
             it "changes file just the first time" do
               expect { new_dump }.to change { File.read("tmp/dump_hook/some_dump.dump") }
                                  .and not_change { File.read("tmp/dump_hook/another_dump.dump") }
@@ -222,6 +253,20 @@ describe DumpHook do
         context "when recreate is enabled using ENV" do
           before(:each) do
             ENV["DUMP_HOOK"] = "recreate"
+          end
+
+          it "changes file" do
+            expect { new_dump }.to change { File.read("tmp/dump_hook/some_dump.dump") }
+            expect { new_dump }.to_not change { File.read("tmp/dump_hook/some_dump.dump") }
+          end
+        end
+
+        context "when recreate is enabled using parameters" do
+          def new_dump
+            object.execute_with_dump("some_dump") do
+              db.run("insert into t values ('a', 'b')")
+              db.run("insert into t values ('c', 'd')")
+            end
           end
 
           it "changes file" do
