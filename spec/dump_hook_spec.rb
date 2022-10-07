@@ -28,6 +28,10 @@ describe DumpHook do
       it 'does not set actual' do
         expect(DumpHook.settings.actual).to be nil
       end
+
+      it 'does not set recreate' do
+        expect(DumpHook.settings.recreate).to be false
+      end
     end
 
     context 'custom settings' do
@@ -38,6 +42,7 @@ describe DumpHook do
       let(:new_host) { 'example.com' }
       let(:new_port) { 600 }
       let(:new_actual) { 'actual_with_some_phrase' }
+      let(:new_recreate) { true }
 
       it 'sets dumps_location' do
         DumpHook.setup { |c| c.dumps_location = new_location }
@@ -73,6 +78,11 @@ describe DumpHook do
         DumpHook.setup { |c| c.actual = new_actual }
         expect(DumpHook.settings.actual).to eq(new_actual)
       end
+
+      it 'sets recreate' do
+        DumpHook.setup { |c| c.recreate = new_recreate }
+        expect(DumpHook.settings.recreate).to eq(new_recreate)
+      end
     end
   end
 
@@ -98,7 +108,7 @@ describe DumpHook do
 
       it 'creates folders' do
         object.execute_with_dump("some_dump") { }
-        expect(Dir.exists?(dumps_location)).to be(true)
+        expect(Dir.exist?(dumps_location)).to be(true)
       end
     end
 
@@ -205,7 +215,7 @@ describe DumpHook do
         end
       end
 
-      context "recreate" do
+      context "[recreate]" do
         before(:each) do
           db.run("create table t (a text, b text)")
           object.execute_with_dump("some_dump") do
@@ -253,20 +263,6 @@ describe DumpHook do
         context "when recreate is enabled using ENV" do
           before(:each) do
             ENV["DUMP_HOOK"] = "recreate"
-          end
-
-          it "changes file" do
-            expect { new_dump }.to change { File.read("tmp/dump_hook/some_dump.dump") }
-            expect { new_dump }.to_not change { File.read("tmp/dump_hook/some_dump.dump") }
-          end
-        end
-
-        context "when recreate is enabled using parameters" do
-          def new_dump
-            object.execute_with_dump("some_dump") do
-              db.run("insert into t values ('a', 'b')")
-              db.run("insert into t values ('c', 'd')")
-            end
           end
 
           it "changes file" do
