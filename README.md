@@ -45,7 +45,7 @@ end
 * `password` - password to connect, works just for MySql
 * `database_type` - `postgres`/`mysql`, by default it's `postgres`
 
-It looks like `database` is a single required parameter. Others may be default for you DB connection. In relation to 
+It looks like `database` is a single required parameter. Others may be default for your DB connection. In relation to 
 `password` for `postgres` you need to use the url way in `database` parameter in order to set `password`. You may use 
 the gem `database_url` to get this url.
 
@@ -58,11 +58,18 @@ may set it to `Date.current` to recreate your dumps every day. By default it's e
 * `remove_old_dumps` - when `actual` is pointed your old dumps will be removed. By default it's `true`.
 * `dumps_location` - by default it's `tmp/dump_hook`. You may pass something more exciting, e.g your current git branch
 or some path to store your dumps in your repo and generate them using CI.
+* `recreate` - by default it's `false`. It recreates your dumps in the current session. It helps when you change 
+`execute_with_dump`'s body. You can set it through `ENV` variable `DUMP_HOOK=recreate` for some certain tests.
+```shell
+ $ DUMP_HOOK=recreate rails test test/system/your_test.rb
+```
 
 ## Usage
 
 *Attention!* It works for clear DB. In case when you have some previous data you may come across with conflicts or 
-incorrect data which may influence your tests.  
+incorrect data which may influence your tests. Yet one vital moment you cannot use the *transactional* way in your tests
+as `dump_hook` will not be able to store anything. Our benchmarks don't note some difference for our system tests and we 
+prefer to use the same way as in the production environment. We hope you go by this rule too. 
 
 There is just single method what wrap your actions and restore dump again
 ```ruby
