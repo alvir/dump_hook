@@ -74,7 +74,8 @@ module DumpHook
   def restore_dump(filename)
     case settings.database_type
       when 'postgres'
-        args = pg_connection_args
+        args = ['--single-transaction']
+        args.concat(pg_connection_args)
         args << filename
         Kernel.system("pg_restore", *args)
       when 'mysql'
@@ -87,7 +88,7 @@ module DumpHook
   def full_filename(name, created_on, actual)
     name_with_created_on = name
     if created_on
-      name_with_created_on = "#{name_with_created_on}_#{created_on.to_s(:number)}"
+      name_with_created_on = "#{name_with_created_on}_#{created_on.strftime('%Y%m%d')}"
     elsif actual
       name_with_created_on = "#{name_with_created_on}_actual#{actual}"
     end
