@@ -33,7 +33,7 @@ There are several parameters to run and manage it.
 ```ruby
 DumpHook.setup do |config|
   config.database = ActiveRecord::Base.configurations[Rails.env]["database"]
-  config.actual = Date.today.monday.to_s(:number)
+  config.actual = Date.today.monday.strftime('%Y%m%d')
 end
 ```
 

@@ -9,9 +9,11 @@ Gem::Specification.new do |spec|
   spec.authors       = ["Alexander Ryazantsev"]
   spec.email         = ["shurik.v.r@gmail.com"]
 
-  spec.summary       = %q{Dumps to cache you backgrounds}
-  spec.description   = %q{We use it for our capybara/Cucumber features.}
-  spec.homepage    = "https://github.com/Anadea/dump_hook"
+  spec.summary       = "Speed up acceptance and system tests by caching and restoring database state"
+  spec.description   = "DumpHook speeds up your Rails system and acceptance tests by dumping and restoring " \
+                       "database state instead of recreating it from scratch on every run. " \
+                       "Supports PostgreSQL and MySQL. Works with Capybara, RSpec, Cucumber, and Minitest."
+  spec.homepage    = "https://github.com/alvir/dump_hook"
   spec.license       = "MIT"
 
   spec.files         = `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
